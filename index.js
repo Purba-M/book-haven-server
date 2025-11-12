@@ -1,6 +1,3 @@
-
-
-
 const express=require('express')
 const cors = require('cors');
 
@@ -32,11 +29,14 @@ async function run() {
     await client.connect();
     const db = client.db('bookHavenDB');
     const booksCollection = db.collection('books');
+    const usersCollection = db.collection('users');
+
     // Send a ping to confirm a successful connection
     
     app.get('/',(req,res)=>{
         res.send('Book Haven API is running')})
 
+      
     //add new book
    app.post('/add-book',async(req,res)=>{
     const newbook = { ...req.body, createdAt: new Date() };
@@ -73,16 +73,28 @@ app.put('/update-book/:id', async (req,res)=>{
   );
   res.send(result);
 });
+
+
 app.delete('/delete-book/:id', async (req,res)=>{
   const id = req.params.id;
   const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
 });
-// client will call: /myBooks?email=user@example.com
-app.get('/myBooks', async (req,res)=>{
-  const email = req.query.email;
-  const books = await booksCollection.find({ userEmail: email }).toArray();
-  res.send(books);
+
+app.get("/my-books", async (req, res) => {
+  try {
+    const email = req.query.email;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const userBooks = await booksCollection.find({ userEmail: email }).toArray();
+    res.send(userBooks);
+  } catch (error) {
+    console.error("Error fetching user books:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
     await client.db("admin").command({ ping: 1 });
