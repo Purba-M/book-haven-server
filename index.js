@@ -24,6 +24,10 @@ const client = new MongoClient(uri, {
   }
 });
 
+app.get('/',(req,res)=>{
+        res.send('Book Haven API is running')})
+
+
 async function run() {
   try {
     await client.connect();
@@ -33,9 +37,7 @@ async function run() {
 
     // Send a ping to confirm a successful connection
     
-    app.get('/',(req,res)=>{
-        res.send('Book Haven API is running')})
-
+    
       
     //add new book
    app.post('/add-book',async(req,res)=>{
