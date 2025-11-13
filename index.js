@@ -3,7 +3,7 @@ const cors = require('cors');
 
 
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 const app=express()
 const port=process.env.PORT || 5000;
 
@@ -58,21 +58,59 @@ app.get('/latest-books', async (req,res) => {
   const books = await booksCollection.find().toArray();
   res.send(books);
 });
-  const { ObjectId } = require('mongodb');
 app.get('/book-details/:id', async (req,res)=>{
   const id = req.params.id;
   const book = await booksCollection.findOne({ _id: new ObjectId(id) });
   res.send(book);
 });
-app.put('/update-book/:id', async (req,res)=>{
+
+app.get('/book/:id', async (req, res) => {
+
   const id = req.params.id;
-  const update = req.body;
-  const result = await booksCollection.updateOne(
-    { _id: new ObjectId(id) },
-    { $set: update }
-  );
-  res.send(result);
+
+  try {
+    const book = await booksCollection.findOne({ _id: new ObjectId(id) });
+    if (!book) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+    res.send(book);
+  } catch (error) {
+    console.error("Error fetching book:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
 });
+
+
+
+app.put('/update-book/:id', async (req, res) => {
+  const id = req.params.id.trim();
+  const updateData = req.body;
+
+  try {
+    if (!ObjectId.isValid(id)) {
+      console.log("Invalid ID received:", id);
+      return res.status(400).json({ message: "Invalid book ID" });
+    }
+
+    delete updateData._id; // prevent overwriting _id
+
+    const result = await booksCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      console.log("Book not found with ID:", id);
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    res.json({ message: "Book updated successfully" });
+  } catch (error) {
+    console.error("Error updating book:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
 
 
 app.delete('/delete-book/:id', async (req,res)=>{
