@@ -1,5 +1,6 @@
 const express=require('express')
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 
 require('dotenv').config()
@@ -23,6 +24,23 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+app.post('/jwt', (req, res) => {
+  const user = req.body;
+  if (!user || !user.email) return res.status(400).send({ message: 'Email required' });
+  const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.send({ token });
+});
+
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).send({ message: 'Unauthorized access' });
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).send({ message: 'Forbidden access' });
+    req.decoded = decoded;
+    next();
+  });
+}
 
 app.get('/',(req,res)=>{
         res.send('Book Haven API is running')})
@@ -30,7 +48,7 @@ app.get('/',(req,res)=>{
 
 async function run() {
   try {
-    await client.connect();
+    
     const db = client.db('bookHavenDB');
     const booksCollection = db.collection('books');
     const usersCollection = db.collection('users');
@@ -137,7 +155,7 @@ app.get("/my-books", async (req, res) => {
   }
 });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
   }
